@@ -5,6 +5,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  
   <title>會員查詢系統 | XLAB Style</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -32,7 +33,6 @@
       margin: 0;
       padding: 0;
       font-family: var(--font-family);
-      /* 深色霓虹背景 */
       background:
         radial-gradient(circle at top, rgba(56,189,248,0.15), transparent 60%),
         radial-gradient(circle at bottom, rgba(168,85,247,0.12), transparent 60%),
@@ -47,10 +47,9 @@
       line-height: 1.6;
     }
 
-    /* 容器樣式 - 模仿 Detail Panel */
     .app-container {
       width: 100%;
-      max-width: 420px; /* 手機版寬度適中 */
+      max-width: 420px;
       padding: 24px;
     }
 
@@ -65,7 +64,6 @@
       transition: transform 0.3s ease, opacity 0.3s ease;
     }
 
-    /* 標題與 Logo */
     header {
       text-align: center;
       margin-bottom: 24px;
@@ -85,7 +83,6 @@
       margin-top: 8px;
     }
 
-    /* 表單元件 */
     label {
       display: block;
       margin-bottom: 8px;
@@ -124,12 +121,11 @@
       background: rgba(15, 23, 42, 0.9);
     }
 
-    /* 按鈕樣式 - 漸層霓虹 */
     button.submit-btn {
       width: 100%;
       padding: 14px;
       border: none;
-      border-radius: 999px; /* 丸型按鈕 */
+      border-radius: 999px;
       background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
       color: #020617;
       font-size: 1.05em;
@@ -173,7 +169,6 @@
       background: rgba(255,255,255,0.05);
     }
 
-    /* 結果顯示區 */
     #resultArea {
       display: none;
       text-align: center;
@@ -194,7 +189,6 @@
       margin-bottom: 8px;
     }
 
-    /* 狀態訊息 */
     .status-msg {
       text-align: center;
       margin-top: 16px;
@@ -204,7 +198,6 @@
     .error { color: #ef4444; }
     .loading { color: var(--color-primary); }
 
-    /* Loading 動畫 */
     .spinner {
       display: inline-block;
       width: 20px;
@@ -224,7 +217,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* RWD */
     @media (max-width: 480px) {
       .app-container {
         padding: 16px;
@@ -242,18 +234,10 @@
     <div id="formContainer" class="glass-card">
       <header>
         <h2>會員資料查詢</h2>
-        <div class="sub-title">請輸入您的註冊資訊以獲取會員卡</div>
+        <div class="sub-title">請輸入您的註冊信箱以獲取會員卡</div>
       </header>
 
       <form id="checkForm">
-        <div class="input-group">
-          <label for="name">
-            <span class="material-symbols-outlined" style="font-size: 1.2em; color: var(--color-primary);">person</span>
-            姓名
-          </label>
-          <input type="text" id="name" required placeholder="請輸入姓名">
-        </div>
-
         <div class="input-group">
           <label for="email">
             <span class="material-symbols-outlined" style="font-size: 1.2em; color: var(--color-secondary);">mail</span>
@@ -302,7 +286,7 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const name = document.getElementById('name').value.trim();
+      // 1. 只抓取 Email，移除 Name
       const email = document.getElementById('email').value.trim();
 
       // UI 切換至讀取狀態
@@ -315,7 +299,8 @@
         const response = await fetch(N8N_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name, email: email })
+          // 2. 這裡只發送 email
+          body: JSON.stringify({ email: email })
         });
 
         const data = await response.json();
@@ -328,6 +313,7 @@
           // 成功：切換畫面
           formContainer.style.display = 'none';
           resultArea.style.display = 'block';
+          // data.name 是從 n8n (Google Sheets) 回傳的，所以就算輸入沒填，這裡還是會顯示名字
           welcomeText.innerText = `${data.name} 你好，您的電子會員卡`;
           memberImage.src = data.imageUrl;
         } else {
