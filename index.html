@@ -5,45 +5,159 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>會員查詢系統</title>
     <style>
+        /* --- 您的樣式 --- */
         :root {
             --font-family: 'Open Sans', sans-serif;
-            
-            /* --- 您可以修改這裡的顏色 --- */
-            --color-background: #ffffff;       /* 整個網頁背景色 */
-            --color-submit-btn-bg: #ff6d5a;    /* 按鈕顏色 */
-            --color-submit-btn-text: #ffffff;  /* 按鈕文字顏色 */
-            --color-input-text: #333333;       /* 輸入框文字顏色 */
-            --color-card-bg: #ffffff;          /* 表單卡片背景 */
-            /* ------------------------- */
-
-            --font-weight-normal: 400;
-            --font-weight-bold: 600;
-            --font-size-body: 12px;
-            --font-size-label: 14px;
-            --font-size-input: 16px;
-            --font-size-header: 20px;
-            
-            --border-radius-card: 8px;
+            --color-background: #ffffff;
+            --color-submit-btn-bg: #ff6d5a;
+            --color-submit-btn-text: #ffffff;
+            --color-input-text: #333333;
+            --color-input-border: #dbdfe7;
             --border-radius-input: 6px;
             --padding-card: 24px;
-            --box-shadow-card: 0px 4px 16px 0px rgba(99, 77, 255, 0.06);
         }
 
-        /* 讓表單在手機上置中顯示的額外設定 */
         body {
-            margin: 0;
-            padding: 0;
+            font-family: var(--font-family);
             background-color: var(--color-background);
+            margin: 0;
+            padding: 20px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
         }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: #fff;
+            padding: var(--padding-card);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+
+        h2 { margin-top: 0; color: #333; text-align: center; }
+        
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--color-input-border);
+            border-radius: var(--border-radius-input);
+            box-sizing: border-box; /* 讓 padding 不會撐爆寬度 */
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--color-submit-btn-bg);
+            color: var(--color-submit-btn-text);
+            border: none;
+            border-radius: var(--border-radius-input);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:disabled { background-color: #ccc; }
+
+        /* 結果顯示區塊 */
+        #resultArea {
+            display: none; /* 預設隱藏 */
+            margin-top: 20px;
+            text-align: center;
+        }
+        #memberImage {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            margin-top: 10px;
+        }
+        .error-msg { color: red; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <script src="https://ooschoolall.zeabur.app/form/a7bf6061-029e-4f54-b4c5-4dae00fd870d/embed"></script>
+    <div class="container" id="formContainer">
+        <h2>會員資料查詢</h2>
+        <form id="checkForm">
+            <label>姓名</label>
+            <input type="text" id="name" required placeholder="請輸入姓名">
+
+            <label>電子信箱</label>
+            <input type="email" id="email" required placeholder="請輸入信箱">
+
+            <button type="submit" id="submitBtn">查詢會員卡</button>
+        </form>
+        <div id="loading" style="display:none; text-align:center; margin-top:10px;">查詢中...</div>
+        <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div class="container" id="resultArea">
+        <h2 id="welcomeText"></h2>
+        <img id="memberImage" src="" alt="會員卡">
+        <button onclick="location.reload()" style="margin-top: 20px; background-color: #555;">重新查詢</button>
+    </div>
+
+    <script>
+        // 🔴 請在這裡填入您 n8n Webhook 節點的 Production URL 🔴
+        const N8N_WEBHOOK_URL = "https://ooschoolall.zeabur.app/webhook/check-member"; 
+
+        const form = document.getElementById('checkForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const errorMsg = document.getElementById('errorMsg');
+        const formContainer = document.getElementById('formContainer');
+        const resultArea = document.getElementById('resultArea');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // 防止表單換頁
+            
+            // 1. 準備資料
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+
+            // 2. UI 狀態切換
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            errorMsg.innerText = '';
+
+            try {
+                // 3. 發送資料給 n8n
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, email: email })
+                });
+
+                const data = await response.json();
+
+                // 4. 處理回傳結果
+                loading.style.display = 'none';
+                
+                if (data.found) {
+                    // 成功：隱藏表單，顯示圖片
+                    formContainer.style.display = 'none';
+                    resultArea.style.display = 'block';
+                    document.getElementById('welcomeText').innerText = `歡迎回來，${data.name}`;
+                    document.getElementById('memberImage').src = data.imageUrl;
+                } else {
+                    // 失敗：顯示錯誤訊息，恢復按鈕
+                    errorMsg.innerText = "找不到此會員資料，請確認輸入是否正確。";
+                    submitBtn.disabled = false;
+                }
+
+            } catch (err) {
+                console.error(err);
+                loading.style.display = 'none';
+                errorMsg.innerText = "系統連線錯誤，請稍後再試。";
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
 
 </body>
 </html>
